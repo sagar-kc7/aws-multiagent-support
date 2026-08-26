@@ -1,0 +1,23 @@
+{
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "refundsAgent": {
+            "runtimeId": "refundsAgent_refundsAgent-JDexaD63RI",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:027758599866:runtime/refundsAgent_refundsAgent-JDexaD63RI",
+            "roleArn": "arn:aws:iam::027758599866:role/AgentCore-refundsAgent-de-ApplicationAgentRefundsAg-M7g358Eccb3J"
+          }
+        },
+        "memories": {
+          "refundsAgentMemory": {
+            "memoryId": "refundsAgent_refundsAgentMemory-PYVeV79XUC",
+            "memoryArn": "arn:aws:bedrock-agentcore:us-east-1:027758599866:memory/refundsAgent_refundsAgentMemory-PYVeV79XUC"
+          }
+        },
+        "stackName": "AgentCore-refundsAgent-default",
+        "deployHash": "33de7f48e73abed3"
+      }
+    }
+  }
+}
