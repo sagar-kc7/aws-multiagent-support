@@ -1,0 +1,23 @@
+{
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "billingAgent": {
+            "runtimeId": "billingAgent_billingAgent-ac2mJN727m",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:027758599866:runtime/billingAgent_billingAgent-ac2mJN727m",
+            "roleArn": "arn:aws:iam::027758599866:role/AgentCore-billingAgent-de-ApplicationAgentBillingAg-thstrQjSwm0g"
+          }
+        },
+        "memories": {
+          "billingAgentMemory": {
+            "memoryId": "billingAgent_billingAgentMemory-TqJmWkHwUQ",
+            "memoryArn": "arn:aws:bedrock-agentcore:us-east-1:027758599866:memory/billingAgent_billingAgentMemory-TqJmWkHwUQ"
+          }
+        },
+        "stackName": "AgentCore-billingAgent-default",
+        "deployHash": "67fcded615765429"
+      }
+    }
+  }
+}
