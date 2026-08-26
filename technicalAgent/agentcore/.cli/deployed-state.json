@@ -1,3 +1,23 @@
 {
-  "targets": {}
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "technicalAgent": {
+            "runtimeId": "technicalAgent_technicalAgent-0lTzarHlcT",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:027758599866:runtime/technicalAgent_technicalAgent-0lTzarHlcT",
+            "roleArn": "arn:aws:iam::027758599866:role/AgentCore-technicalAgent--ApplicationAgentTechnical-FJRtiNhaGloj"
+          }
+        },
+        "memories": {
+          "technicalAgentMemory": {
+            "memoryId": "technicalAgent_technicalAgentMemory-JnY6LC5kiK",
+            "memoryArn": "arn:aws:bedrock-agentcore:us-east-1:027758599866:memory/technicalAgent_technicalAgentMemory-JnY6LC5kiK"
+          }
+        },
+        "stackName": "AgentCore-technicalAgent-default",
+        "deployHash": "9f21f5f0193b95f8"
+      }
+    }
+  }
 }
