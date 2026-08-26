@@ -1,2 +1,15 @@
-aws-cdk-lib>=2.265.0,<3.0.0
-constructs>=10.5.0,<11.0.0
+attrs==26.1.0
+aws-cdk-lib==2.266.0
+aws-cdk.asset-awscli-v1==2.2.292
+aws-cdk.asset-node-proxy-agent-v6==2.1.2
+aws-cdk.cloud-assembly-schema==54.20.0
+cattrs==26.1.0
+cdk-nag==2.38.2
+cdklabs.generative-ai-cdk-constructs==0.1.318
+constructs==10.8.1
+jsii==1.140.0
+publication==0.0.3
+python-dateutil==2.9.0.post0
+six==1.17.0
+typeguard==2.13.3
+typing_extensions==4.16.0
