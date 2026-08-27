@@ -1,58 +1,112 @@
+cat > ~/aws-multiagent-support/README.md << 'READMEEOF'
+# CloudNest Multi-Agent Support System
 
-# Welcome to your CDK Python project!
+A production-style multi-agent customer support platform built on AWS, using a supervisor agent that routes user questions to specialized sub-agents, each grounded in its own knowledge base via retrieval-augmented generation (RAG).
 
-This is a blank project for CDK development with Python.
+Built as a hands-on portfolio project to apply AWS's core generative AI services after completing the AWS Certified AI Practitioner course.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Architecture
 
-This project is set up like a standard Python project.  The initialization
-process also creates a virtualenv within this project, stored under the `.venv`
-directory.  To create the virtualenv it assumes that there is a `python3`
-(or `python` for Windows) executable in your path with access to the `venv`
-package. If for any reason the automatic creation of the virtualenv fails,
-you can create the virtualenv manually.
+User Query -> Supervisor Agent (AgentCore Runtime, Strands, Claude Haiku 4.5)
+Supervisor routes via tool-calling to three specialists:
+Technical Agent, Billing Agent, Refunds Agent (each an AgentCore Runtime, Strands)
+Each specialist queries its own Bedrock Knowledge Base (Technical KB, Billing KB, Refunds KB)
+Each Knowledge Base is backed by Pinecone (vector store), fed from S3 (source documents)
 
-To manually create a virtualenv on MacOS and Linux:
+## Tech Stack
 
-```
-$ python3 -m venv .venv
-```
+- Agent framework: Strands Agents SDK (AWS-native)
+- Agent runtime: Amazon Bedrock AgentCore Runtime
+- LLM: Claude Haiku 4.5 via Amazon Bedrock
+- Retrieval: Amazon Bedrock Knowledge Bases
+- Vector store: Pinecone (serverless, free tier)
+- Embeddings: Amazon Titan Embed Text v2 (1024-dim)
+- Document storage: Amazon S3
+- Infrastructure as Code: AWS CDK (Python) for core infra; AgentCore CLI-managed CDK for agent deployment
+- Secrets: AWS Secrets Manager
 
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
+## Why this architecture
 
-```
-$ source .venv/bin/activate
-```
+- Domain-scoped retrieval: separating billing, technical, and refunds into distinct Knowledge Bases keeps each specialist's context clean and reduces irrelevant retrieval.
+- Supervisor pattern over a single mega-agent: each specialist stays focused and independently testable; adding a fourth domain later means adding one more agent, not restructuring a monolithic prompt.
+- Multi-domain handling: a single user message spanning two domains (e.g. "my API key broke and I want a refund") is routed to multiple specialists and synthesized into one response, demonstrated in testing.
+- Cost-conscious choices: Pinecone's free tier replaces Amazon OpenSearch Serverless (which has a high always-on cost floor) as the Knowledge Base vector store, keeping the whole project inside a $120 AWS credit budget.
 
-If you are a Windows platform, you would activate the virtualenv like this:
+## Project Structure
 
-```
-% .venv\Scripts\activate.bat
-```
+aws-multiagent-support/
+  aws_multiagent_support/    CDK: S3 buckets + Bedrock Knowledge Bases
+  kb-docs/                   Source documents per domain (billing, technical, refunds)
+  technicalAgent/            Strands agent + AgentCore deployment config
+  billingAgent/              Strands agent + AgentCore deployment config
+  refundsAgent/              Strands agent + AgentCore deployment config
+  supervisorAgent/           Strands agent that routes to the three specialists
 
-Once the virtualenv is activated, you can install the required dependencies.
+Each *Agent/ directory follows the same shape:
 
-```
-$ pip install -r requirements.txt
-```
+  app/<name>Agent/
+    main.py           Agent entrypoint, tool registration, system prompt
+    model/load.py     Bedrock model configuration
+    skills/           Custom tools (KB retrieval or specialist invocation)
+  agentcore/           AgentCore CLI-managed deployment config
 
-At this point you can now synthesize the CloudFormation template for this code.
+## Setup
 
-```
-$ cdk synth
-```
+### Prerequisites
 
-To add additional dependencies, for example other CDK libraries, just add
-them to your `requirements.txt` file and rerun the `python -m pip install -r requirements.txt`
-command.
+- AWS account with Bedrock model access enabled (Claude Haiku 4.5, Titan Embeddings)
+- AWS CLI configured with an IAM user (not root)
+- Node.js 20+, Python 3.10+, AWS CDK, AgentCore CLI (npm install -g @aws/agentcore)
+- A free Pinecone account
 
-## Useful commands
+### 1. Deploy core infrastructure (S3 + Knowledge Bases)
 
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
+    python -m venv .venv && source .venv/bin/activate
+    pip install -r requirements.txt
+    cdk bootstrap
+    cdk deploy
 
-Enjoy!
+### 2. Populate the Knowledge Bases
+
+    aws bedrock-agent start-ingestion-job --knowledge-base-id KB_ID --data-source-id DATA_SOURCE_ID
+
+(repeat for each of the three Knowledge Bases)
+
+### 3. Deploy the specialist agents
+
+    cd technicalAgent && agentcore deploy
+    cd ../billingAgent && agentcore deploy
+    cd ../refundsAgent && agentcore deploy
+
+Each specialist agent's execution role needs bedrock:Retrieve scoped to its own Knowledge Base ARN, granted via an inline IAM policy after deployment.
+
+### 4. Deploy the supervisor
+
+    cd ../supervisorAgent && agentcore deploy
+
+The supervisor's execution role needs bedrock-agentcore:InvokeAgentRuntime scoped to all three specialist Runtime ARNs and their /runtime-endpoint/* sub-resources.
+
+### 5. Test
+
+    agentcore invoke "My API key stopped working and I also want to know if I can get a refund since I only used the product for 5 days"
+
+## Notable engineering challenges
+
+- Bedrock Agents Classic is closed to new accounts (as of July 2026): pivoted the entire agent layer from CDK-declared Bedrock Agents to Amazon Bedrock AgentCore + Strands Agents SDK mid-build.
+- IAM action namespace mismatches: the API service is bedrock-agent-runtime, but the IAM action for Knowledge Base retrieval is bedrock:Retrieve, not bedrock-agent-runtime:Retrieve. Diagnosed by reading raw CloudWatch logs for the exact AccessDeniedException message rather than assuming.
+- ARN sub-resource scoping: IAM permission checks for InvokeAgentRuntime are evaluated against the /runtime-endpoint/DEFAULT sub-resource, not the bare Runtime ARN, so both forms were required in the policy.
+- SSE response parsing: AgentCore Runtime responses stream as Server-Sent Events (data: {json} per line), not plain newline-delimited JSON, which required adjusting the supervisor's response-parsing logic after inspecting raw output via curl.
+
+## Cost
+
+Built entirely within a $120 AWS free-tier credit (45-day window):
+
+- Bedrock model and embedding calls: pay-per-token, negligible at dev-scale usage
+- AgentCore Runtime: pay-per-invocation
+- S3, Secrets Manager: pennies
+- Pinecone: free tier (avoided Amazon OpenSearch Serverless's high always-on cost floor)
+
+## Author
+
+Sagar K.C. - github.com/sagar-kc7
+READMEEOF
