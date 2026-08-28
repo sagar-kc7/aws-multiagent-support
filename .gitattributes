@@ -1,0 +1,4 @@
+technicalAgent/agentcore/cdk/** linguist-generated=true
+billingAgent/agentcore/cdk/** linguist-generated=true
+refundsAgent/agentcore/cdk/** linguist-generated=true
+supervisorAgent/agentcore/cdk/** linguist-generated=true
