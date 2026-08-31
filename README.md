@@ -135,8 +135,6 @@ agentcore invoke "My API key stopped working and I also want to know if I can ge
 
 ## Cost
 
-Built entirely within a $120 AWS free-tier credit (45-day window):
-
 - Bedrock model + embedding calls: pay-per-token, negligible at dev-scale usage
 - AgentCore Runtime: pay-per-invocation
 - S3, Secrets Manager: pennies
